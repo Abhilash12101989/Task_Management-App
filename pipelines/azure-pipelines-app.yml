@@ -1,0 +1,203 @@
+# ==============================================================================
+# Azure DevOps Pipeline: Application CI/CD (Frontend + Backend Deploy)
+# Builds React frontend, tests FastAPI backend, and deploys to VM 1
+# ==============================================================================
+
+name: $(Build.DefinitionName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - frontend/**
+      - backend/**
+      - nginx/**
+      - pipelines/azure-pipelines-app.yml
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - frontend/**
+      - backend/**
+
+variables:
+  - name: nodeVersion
+    value: '18.x'
+  - name: pythonVersion
+    value: '3.11'
+  - name: appVmSshServiceConnection
+    value: 'taskapp-vm1-ssh' # Configured in Service Connections -> SSH
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  # ============================================================================
+  # Stage 1: Build Frontend & Test Backend (Parallel Jobs)
+  # ============================================================================
+  - stage: BuildAndTest
+    displayName: 'Build & Unit Test'
+    jobs:
+      # Job A: Frontend Build
+      - job: FrontendBuild
+        displayName: 'Build React Frontend'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js $(nodeVersion)'
+            inputs:
+              versionSpec: '$(nodeVersion)'
+
+          - script: |
+              cd frontend
+              npm ci
+              npm run build
+            displayName: 'Install NPM Dependencies and Build Vite Bundle'
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Frontend Dist Artifact'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/frontend/dist'
+              artifact: 'frontend-dist'
+              publishLocation: 'pipeline'
+
+      # Job B: Backend Test & Package
+      - job: BackendTest
+        displayName: 'Test FastAPI Backend'
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Install Python $(pythonVersion)'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+
+          - script: |
+              cd backend
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+              pip install pytest pytest-cov
+              pytest --junitxml=junit-results.xml tests/
+            displayName: 'Install Dependencies & Run Pytest'
+
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: '**/junit-results.xml'
+              testRunTitle: 'FastAPI Unit Tests'
+
+          - task: ArchiveFiles@2
+            displayName: 'Archive Backend Code'
+            inputs:
+              rootFolderOrFile: '$(System.DefaultWorkingDirectory)/backend'
+              includeRootFolder: false
+              archiveType: 'tar'
+              tarCompression: 'gz'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/backend.tar.gz'
+              replaceExistingArchive: true
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Backend Artifact'
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/backend.tar.gz'
+              artifact: 'backend-pkg'
+              publishLocation: 'pipeline'
+
+  # ============================================================================
+  # Stage 2: Deploy to VM 1 (Application Server)
+  # ============================================================================
+  - stage: DeployToVM
+    displayName: 'Deploy to Application VM 1'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployJob
+        displayName: 'Deploy React + FastAPI to VM 1'
+        environment: 'production-app'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Frontend Artifact'
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'frontend-dist'
+                    targetPath: '$(Pipeline.Workspace)/frontend-dist'
+
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Backend Artifact'
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'backend-pkg'
+                    targetPath: '$(Pipeline.Workspace)/backend-pkg'
+
+                # Copy files to VM1 via SSH/SCP
+                - task: CopyFilesOverSSH@0
+                  displayName: 'Deploy Frontend Static Files to Nginx'
+                  inputs:
+                    sshEndpoint: '$(appVmSshServiceConnection)'
+                    sourceFolder: '$(Pipeline.Workspace)/frontend-dist'
+                    contents: '**'
+                    targetFolder: '/tmp/frontend-dist'
+                    cleanTargetFolder: true
+
+                - task: CopyFilesOverSSH@0
+                  displayName: 'Deploy Backend Archive to VM'
+                  inputs:
+                    sshEndpoint: '$(appVmSshServiceConnection)'
+                    sourceFolder: '$(Pipeline.Workspace)/backend-pkg'
+                    contents: 'backend.tar.gz'
+                    targetFolder: '/tmp'
+
+                # Execute Deployment with Pre-deploy Backup and Automated Rollback
+                - task: SSH@0
+                  displayName: 'Deploy with Rollback Protection & Health Check'
+                  inputs:
+                    sshEndpoint: '$(appVmSshServiceConnection)'
+                    runOptions: 'inline'
+                    inline: |
+                      set -euo pipefail
+                      echo ">>> [1/5] Creating pre-deploy backup for rollback safety..."
+                      sudo rm -rf /opt/task-backend.bak /var/www/task-app.bak
+                      if [ -d /opt/task-backend ]; then sudo cp -r /opt/task-backend /opt/task-backend.bak; fi
+                      if [ -d /var/www/task-app ]; then sudo cp -r /var/www/task-app /var/www/task-app.bak; fi
+
+                      echo ">>> [2/5] Deploying Frontend to /var/www/task-app..."
+                      sudo rm -rf /var/www/task-app/*
+                      sudo cp -r /tmp/frontend-dist/* /var/www/task-app/
+                      sudo chown -R www-data:www-data /var/www/task-app
+
+                      echo ">>> [3/5] Deploying Backend to /opt/task-backend..."
+                      sudo tar -xzf /tmp/backend.tar.gz -C /opt/task-backend/
+                      sudo chown -R azureuser:azureuser /opt/task-backend/
+
+                      echo ">>> [4/5] Updating Python dependencies & restarting Gunicorn/Uvicorn..."
+                      sudo -u azureuser /opt/task-backend/venv/bin/pip install -r /opt/task-backend/requirements.txt
+                      sudo systemctl restart task-backend.service
+                      sudo nginx -t && sudo systemctl reload nginx
+
+                      echo ">>> [5/5] Running Readiness Health Check..."
+                      sleep 3
+                      if curl -f --retry 3 --retry-delay 2 http://127.0.0.1:8000/api/health/ready; then
+                        echo "✅ Deployment verified and healthy!"
+                        sudo rm -rf /opt/task-backend.bak /var/www/task-app.bak
+                      else
+                        echo "❌ Health check failed! Initiating automated rollback..."
+                        if [ -d /opt/task-backend.bak ]; then
+                          sudo rm -rf /opt/task-backend
+                          sudo mv /opt/task-backend.bak /opt/task-backend
+                          sudo systemctl restart task-backend.service
+                        fi
+                        if [ -d /var/www/task-app.bak ]; then
+                          sudo rm -rf /var/www/task-app
+                          sudo mv /var/www/task-app.bak /var/www/task-app
+                          sudo systemctl reload nginx
+                        fi
+                        echo "⚠️ Rolled back to previous stable release."
+                        exit 1
+                      fi
+

@@ -1,0 +1,29 @@
+# ==============================================================================
+# Example Terraform Variables for Task Management App
+# Rename this file to terraform.tfvars and customize the values
+# ==============================================================================
+
+resource_group_name = "rg-taskapp-dev"
+location            = "eastus"
+environment         = "dev"
+
+# Network
+vnet_cidr           = "10.0.0.0/16"
+app_subnet_cidr     = "10.0.1.0/24"
+db_subnet_cidr      = "10.0.2.0/24"
+
+# Compute Sizes
+app_vm_size         = "Standard_B2s"
+db_vm_size          = "Standard_B2s"
+
+# Credentials & Access
+admin_username      = "azureuser"
+# Replace with your public IP to restrict SSH access, or "*" for open lab access
+admin_ssh_ip        = "*"
+
+# Provide your existing SSH public key, or leave empty to auto-generate
+ssh_public_key      = ""
+
+# PostgreSQL Database Credentials
+db_password         = "SecureTaskPass123!"
+

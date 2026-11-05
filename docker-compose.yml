@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Tier 3: Database (PostgreSQL 16)
+  # Represents VM 2 in the Azure architecture
+  # ============================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: task_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: taskdb
+      POSTGRES_USER: taskuser
+      POSTGRES_PASSWORD: SecureTaskPass123!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskuser -d taskdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - task_network
+
+  # ============================================================================
+  # Tier 2: Backend API (FastAPI)
+  # Represents Backend process on VM 1
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: task_backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: "Task Management API"
+      ENVIRONMENT: "development"
+      DATABASE_URL: "postgresql://taskuser:SecureTaskPass123!@db:5432/taskdb"
+      CORS_ORIGINS: '["*"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - task_network
+
+  # ============================================================================
+  # Tier 1: Frontend (React + Nginx)
+  # Represents React static build served by Nginx on VM 1
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: task_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - task_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  task_network:
+    driver: bridge
+

@@ -1,0 +1,19 @@
+# ==============================================================================
+# Remote Terraform State Backend (Azure Blob Storage)
+# Rename to backend.tf after creating the Azure Storage Account
+#
+# Azure CLI Commands to create the backend:
+#   az group create --name rg-tfstate --location eastus
+#   az storage account create --name sttfstatetaskapp$RANDOM --resource-group rg-tfstate --sku Standard_LRS --encryption-services blob
+#   az storage container create --name tfstate --account-name <STORAGE_ACCOUNT_NAME>
+# ==============================================================================
+
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-tfstate"
+    storage_account_name = "sttfstatetaskapp"
+    container_name       = "tfstate"
+    key                  = "taskapp.dev.terraform.tfstate"
+  }
+}
+
