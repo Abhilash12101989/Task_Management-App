@@ -38,6 +38,16 @@ variable "db_subnet" {
   default = {}
 }
 
+variable "bastion_subnet" {
+  description = "Map of Azure Bastion subnets to create"
+  type = map(object({
+    rg_key           = string
+    vnet_key         = string
+    address_prefixes = list(string)
+  }))
+  default = {}
+}
+
 variable "nsg" {
   description = "Map of Network Security Groups and their security rules"
   type = map(object({
@@ -54,6 +64,55 @@ variable "nsg" {
       source_address_prefix      = string
       destination_address_prefix = string
     })), [])
+  }))
+  default = {}
+}
+
+variable "public_ip" {
+  description = "Map of Public IPs to create"
+  type = map(object({
+    name              = string
+    rg_key            = string
+    allocation_method = string
+    sku               = optional(string, "Standard")
+  }))
+  default = {}
+}
+
+variable "bastion" {
+  description = "Map of Azure Bastion hosts to create"
+  type = map(object({
+    name          = string
+    rg_key        = string
+    subnet_key    = string
+    public_ip_key = string
+    sku           = optional(string, "Basic")
+  }))
+  default = {}
+}
+
+variable "nic" {
+  description = "Map of Network Interfaces to create"
+  type = map(object({
+    name                          = string
+    rg_key                        = string
+    subnet_key                    = string
+    private_ip_address_allocation = optional(string, "Dynamic")
+    public_ip_key                 = optional(string)
+  }))
+  default = {}
+}
+
+variable "vm" {
+  description = "Map of Linux Virtual Machines to create"
+  type = map(object({
+    name           = string
+    rg_key         = string
+    nic_key        = string
+    size           = optional(string, "Standard_B2s")
+    admin_username = optional(string, "azureuser")
+    admin_password = optional(string, "Password1234!")
+    os_disk_type   = optional(string, "Standard_LRS")
   }))
   default = {}
 }

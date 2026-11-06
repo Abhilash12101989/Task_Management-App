@@ -5,12 +5,13 @@ module "resource_group" {
 }
 
 module "networking" {
-  source     = "../../Modules/networking"
-  rg_name    = module.resource_group.rg_name
-  vnet       = var.vnet
-  app_subnet = var.app_subnet
-  db_subnet  = var.db_subnet
-  tags       = local.common_tags
+  source         = "../../Modules/networking"
+  rg_name        = module.resource_group.rg_name
+  vnet           = var.vnet
+  app_subnet     = var.app_subnet
+  db_subnet      = var.db_subnet
+  bastion_subnet = var.bastion_subnet
+  tags           = local.common_tags
 
   depends_on = [module.resource_group]
 }
@@ -22,5 +23,51 @@ module "nsg" {
   nsg           = var.nsg
   tags          = local.common_tags
   app_subnet_id = module.networking.app_subnet_id
-  depends_on    = [module.resource_group, module.networking]
+
+  depends_on = [module.resource_group, module.networking]
+}
+
+module "public_ip" {
+  source      = "../../Modules/public_ip"
+  rg_name     = module.resource_group.rg_name
+  rg_location = module.resource_group.rg_location
+  public_ip   = var.public_ip
+  tags        = local.common_tags
+
+  depends_on = [module.resource_group]
+}
+
+module "bastion" {
+  source       = "../../Modules/bastion"
+  rg_name      = module.resource_group.rg_name
+  rg_location  = module.resource_group.rg_location
+  bastion      = var.bastion
+  subnet_id    = module.networking.bastion_subnet_id
+  public_ip_id = module.public_ip.public_ip_id
+  tags         = local.common_tags
+
+  depends_on = [module.networking, module.public_ip]
+}
+
+module "nic" {
+  source       = "../../Modules/nic"
+  rg_name      = module.resource_group.rg_name
+  rg_location  = module.resource_group.rg_location
+  nic          = var.nic
+  subnet_id    = module.networking.app_subnet_id
+  public_ip_id = module.public_ip.public_ip_id
+  tags         = local.common_tags
+
+  depends_on = [module.networking, module.public_ip]
+}
+
+module "virtual_machine" {
+  source      = "../../Modules/virtual_machine"
+  rg_name     = module.resource_group.rg_name
+  rg_location = module.resource_group.rg_location
+  vm          = var.vm
+  nic_id      = module.nic.nic_id
+  tags        = local.common_tags
+
+  depends_on = [module.nic]
 }

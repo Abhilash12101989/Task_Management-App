@@ -35,6 +35,16 @@ variable "db_subnet" {
   default = {}
 }
 
+variable "bastion_subnet" {
+  description = "Map of Azure Bastion subnets to create"
+  type = map(object({
+    rg_key           = string
+    vnet_key         = string
+    address_prefixes = list(string)
+  }))
+  default = {}
+}
+
 variable "tags" {
   description = "Tags for the networking resources"
   type        = map(string)

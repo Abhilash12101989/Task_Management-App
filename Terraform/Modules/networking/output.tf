@@ -25,3 +25,10 @@ output "db_subnet_id" {
     for k, v in azurerm_subnet.db_subnet : k => v.id
   }
 }
+
+output "bastion_subnet_id" {
+  description = "Azure Bastion subnet IDs keyed by subnet identifier"
+  value = {
+    for k, v in azurerm_subnet.bastion_subnet : k => v.id
+  }
+}
