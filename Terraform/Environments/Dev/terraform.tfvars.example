@@ -69,14 +69,14 @@ nsg = {
         destination_address_prefix = "*"
       },
       {
-        name                       = "Allow-SSH"
+        name                       = "Allow-SSH-From-Bastion"
         priority                   = 120
         direction                  = "Inbound"
         access                     = "Allow"
         protocol                   = "Tcp"
         source_port_range          = "*"
         destination_port_range     = "22"
-        source_address_prefix      = "YOUR_PUBLIC_IP/32" # Replace with your public IP (e.g. "203.0.113.10/32")
+        source_address_prefix      = "10.0.3.0/26" # Strictly allow SSH from AzureBastionSubnet only
         destination_address_prefix = "*"
       }
     ]
@@ -84,17 +84,29 @@ nsg = {
 }
 
 public_ip = {
-  app_pip = {
-    name              = "pip-taskmanagement-app-dev"
-    rg_key            = "dev_rg"
-    allocation_method = "Static"
-    sku               = "Standard"
-  }
+  # Dedicated Public IP for Azure Bastion
   bastion_pip = {
     name              = "pip-bas-taskmanagement-dev"
     rg_key            = "dev_rg"
     allocation_method = "Static"
     sku               = "Standard"
+  }
+
+  # Dedicated Public IP for NAT Gateway (enables outbound internet translation for private App Subnet)
+  nat_pip = {
+    name              = "pip-nat-taskmanagement-dev"
+    rg_key            = "dev_rg"
+    allocation_method = "Static"
+    sku               = "Standard"
+  }
+}
+
+nat_gateway = {
+  app_nat = {
+    name          = "nat-taskmanagement-dev"
+    rg_key        = "dev_rg"
+    public_ip_key = "nat_pip"
+    subnet_key    = "app"
   }
 }
 
@@ -109,12 +121,12 @@ bastion = {
 }
 
 nic = {
+  # Private NIC only - No Public IP attached
   app_nic = {
     name                          = "nic-taskmanagement-vm-dev"
     rg_key                        = "dev_rg"
     subnet_key                    = "app"
     private_ip_address_allocation = "Dynamic"
-    public_ip_key                 = "app_pip"
   }
 }
 
@@ -125,7 +137,7 @@ vm = {
     nic_key        = "app_nic"
     size           = "Standard_B2s"
     admin_username = "azureuser"
-    admin_password = "Password1234!"
+    admin_password = "Password1234!" # Use a strong password meeting Azure complexity requirements
     os_disk_type   = "Standard_LRS"
   }
 }

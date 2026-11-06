@@ -79,6 +79,19 @@ variable "public_ip" {
   default = {}
 }
 
+variable "nat_gateway" {
+  description = "Map of NAT Gateways to create"
+  type = map(object({
+    name                    = string
+    rg_key                  = string
+    sku_name                = optional(string, "Standard")
+    idle_timeout_in_minutes = optional(number, 4)
+    public_ip_key           = optional(string)
+    subnet_key              = optional(string)
+  }))
+  default = {}
+}
+
 variable "bastion" {
   description = "Map of Azure Bastion hosts to create"
   type = map(object({
@@ -111,7 +124,7 @@ variable "vm" {
     nic_key        = string
     size           = optional(string, "Standard_B2s")
     admin_username = optional(string, "azureuser")
-    admin_password = optional(string, "Password1234!")
+    admin_password = string
     os_disk_type   = optional(string, "Standard_LRS")
   }))
   default = {}

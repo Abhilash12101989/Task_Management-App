@@ -37,6 +37,18 @@ module "public_ip" {
   depends_on = [module.resource_group]
 }
 
+module "nat_gateway" {
+  source       = "../../Modules/nat_gateway"
+  rg_name      = module.resource_group.rg_name
+  rg_location  = module.resource_group.rg_location
+  nat_gateway  = var.nat_gateway
+  public_ip_id = module.public_ip.public_ip_id
+  subnet_id    = module.networking.app_subnet_id
+  tags         = local.common_tags
+
+  depends_on = [module.resource_group, module.public_ip, module.networking]
+}
+
 module "bastion" {
   source       = "../../Modules/bastion"
   rg_name      = module.resource_group.rg_name

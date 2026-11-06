@@ -53,6 +53,11 @@ output "public_ip_addresses" {
   value       = module.public_ip.public_ip_address
 }
 
+output "nat_gateway_ids" {
+  description = "NAT Gateway IDs"
+  value       = module.nat_gateway.nat_gateway_id
+}
+
 output "bastion_ids" {
   description = "Azure Bastion Host IDs"
   value       = module.bastion.bastion_id

@@ -5,7 +5,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   location                        = var.rg_location[each.value.rg_key]
   size                            = try(each.value.size, "Standard_B2s")
   admin_username                  = try(each.value.admin_username, "azureuser")
-  admin_password                  = try(each.value.admin_password, "Password1234!")
+  admin_password                  = each.value.admin_password
   disable_password_authentication = false
   network_interface_ids           = [var.nic_id[each.value.nic_key]]
   tags                            = var.tags
@@ -22,4 +22,3 @@ resource "azurerm_linux_virtual_machine" "vm" {
     version   = "latest"
   }
 }
-

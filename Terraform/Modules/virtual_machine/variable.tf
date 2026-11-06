@@ -6,7 +6,7 @@ variable "vm" {
     nic_key        = string
     size           = optional(string, "Standard_B2s")
     admin_username = optional(string, "azureuser")
-    admin_password = optional(string, "Password1234!")
+    admin_password = string
     os_disk_type   = optional(string, "Standard_LRS")
   }))
 }
@@ -31,4 +31,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-

@@ -182,21 +182,24 @@ npm run dev
 
 When you build your own **Terraform IaC** and **CI/CD Pipelines**, you can use the following specifications:
 
-### Target Infrastructure Architecture
-1. **Virtual Network (VNet):** `10.0.0.0/16`
-   - **App Subnet (`snet-app`):** `10.0.1.0/24` (Hosts VM 1)
-   - **Database Subnet (`snet-db`):** `10.0.2.0/24` (Hosts VM 2)
+### Target Infrastructure Architecture (Phase 1: Azure VM + PaaS)
+1. **Virtual Network (VNet):** `10.0.0.0/16` (Region: Central India)
+   - **App Subnet (`snet-app`):** `10.0.1.0/24` (Hosts Private Application VM)
+   - **Database Subnet (`snet-db`):** `10.0.2.0/28` (Delegated to `Microsoft.DBforPostgreSQL/flexibleServers`)
+   - **Bastion Subnet (`AzureBastionSubnet`):** `10.0.3.0/26` (Hosts Azure Bastion Host)
 2. **Network Security Groups (NSGs):**
-   - **App NSG:** Inbound HTTP (Port 80) and HTTPS (Port 443) from Internet; SSH (Port 22) restricted to admin IP.
-   - **Database NSG:** Inbound Port 5432 (PostgreSQL) allowed **strictly from `10.0.1.0/24`**; all public access denied.
-3. **VM 1 (Application Server):**
-   - OS: Ubuntu 22.04 LTS (e.g., `Standard_B2s`)
-   - Networking: Public IP attached.
-   - Services: Nginx reverse proxy + React SPA built bundle (`/var/www/task-app`) + FastAPI daemon (`systemd` service `task-backend.service`).
-4. **VM 2 (Database Server):**
-   - OS: Ubuntu 22.04 LTS
-   - Networking: Private IP only (Jumpbox SSH via VM 1: `ssh -J azureuser@<VM1_IP> azureuser@<VM2_IP>`).
-   - Service: PostgreSQL 16 listening on `0.0.0.0:5432` with access allowed for `taskuser` from `10.0.1.0/24`.
+   - **App NSG:** Inbound HTTP (Port 80) and HTTPS (Port 443); SSH (Port 22) **strictly restricted to AzureBastionSubnet (`10.0.3.0/26`)**.
+3. **Application VM (Private Compute):**
+   - OS: Ubuntu 22.04 LTS (`Standard_B2s`)
+   - Networking: **Private IP only** (No Public IP).
+   - Authentication: SSH Public Key authentication only (`disable_password_authentication = true`).
+   - Administration: Accessible securely via **Azure Bastion** (`bas-taskmanagement-dev`).
+   - Workload: Runs Docker containers (Nginx reverse proxy, React SPA, and FastAPI REST API).
+4. **Database Tier (PaaS):**
+   - Service: Azure Database for PostgreSQL Flexible Server with private VNet integration.
+   - Networking: Private DNS Zone (`privatelink.postgres.database.azure.com`) linked to VNet; public network access disabled.
+5. **Outbound Connectivity:**
+   - Azure NAT Gateway attached to `snet-app` for secure outbound internet access (package installs, container image pulls).
 
 ### Recommended CI/CD Pipeline Stages
 - **Infrastructure Pipeline:**
