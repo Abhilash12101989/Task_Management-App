@@ -20,3 +20,13 @@ resource "azurerm_network_security_group" "nsg" {
     }
   }
 }
+
+# Associate NSG with Application Subnet
+
+resource "azurerm_subnet_network_security_group_association" "nsg_association" {
+  for_each = var.nsg
+
+  subnet_id = var.app_subnet_id[each.key]
+
+  network_security_group_id = azurerm_network_security_group.nsg[each.key].id
+}

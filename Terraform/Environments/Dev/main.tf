@@ -16,11 +16,11 @@ module "networking" {
 }
 
 module "nsg" {
-  source      = "../../Modules/nsg"
-  rg_name     = module.resource_group.rg_name
-  rg_location = module.resource_group.rg_location
-  nsg         = var.nsg
-  tags        = local.common_tags
-
-  depends_on = [module.resource_group]
+  source        = "../../Modules/nsg"
+  rg_name       = module.resource_group.rg_name
+  rg_location   = module.resource_group.rg_location
+  nsg           = var.nsg
+  tags          = local.common_tags
+  app_subnet_id = module.networking.app_subnet_id
+  depends_on    = [module.resource_group, module.networking]
 }

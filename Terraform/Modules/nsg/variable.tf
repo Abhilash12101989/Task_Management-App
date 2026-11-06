@@ -32,3 +32,8 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "app_subnet_id" {
+  description = "Map of application subnet IDs keyed by NSG key"
+  type        = map(string)
+}

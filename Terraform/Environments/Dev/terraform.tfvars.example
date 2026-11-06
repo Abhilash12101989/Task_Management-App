@@ -33,8 +33,8 @@ db_subnet = {
 }
 
 nsg = {
-  # NSG for Single Application VM (Hosting both Frontend and Backend containers)
-  app_nsg = {
+  # Key 'app' matches the key in app_subnet for automatic NSG-to-subnet association
+  app = {
     name   = "nsg-taskmanagement-app-dev"
     rg_key = "dev_rg"
     security_rules = [
@@ -90,47 +90,6 @@ nsg = {
         protocol                   = "Tcp"
         source_port_range          = "*"
         destination_port_range     = "8000"
-        source_address_prefix      = "*"
-        destination_address_prefix = "*"
-      }
-    ]
-  },
-
-  # NSG for Database Tier (Strictly isolated to Application Subnet traffic)
-  db_nsg = {
-    name   = "nsg-taskmanagement-db-dev"
-    rg_key = "dev_rg"
-    security_rules = [
-      {
-        name                       = "Allow-Postgres-From-AppSubnet"
-        priority                   = 100
-        direction                  = "Inbound"
-        access                     = "Allow"
-        protocol                   = "Tcp"
-        source_port_range          = "*"
-        destination_port_range     = "5432"
-        source_address_prefix      = "10.0.1.0/24"
-        destination_address_prefix = "*"
-      },
-      {
-        name                       = "Allow-SSH-From-AppSubnet"
-        priority                   = 110
-        direction                  = "Inbound"
-        access                     = "Allow"
-        protocol                   = "Tcp"
-        source_port_range          = "*"
-        destination_port_range     = "22"
-        source_address_prefix      = "10.0.1.0/24"
-        destination_address_prefix = "*"
-      },
-      {
-        name                       = "Deny-All-Inbound-Default"
-        priority                   = 4000
-        direction                  = "Inbound"
-        access                     = "Deny"
-        protocol                   = "*"
-        source_port_range          = "*"
-        destination_port_range     = "*"
         source_address_prefix      = "*"
         destination_address_prefix = "*"
       }
