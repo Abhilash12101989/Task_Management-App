@@ -32,11 +32,11 @@ resource "azurerm_subnet" "db_subnet" {
 
     service_delegation {
       name = "Microsoft.DBforPostgreSQL/flexibleServers"
-    # Iska matlab hai ki hum ye subnet PostgreSQL Flexible Server service ko dedicate kar rahe hain
+      # Iska matlab hai ki hum ye subnet PostgreSQL Flexible Server service ko dedicate kar rahe hain
 
       actions = [
         "Microsoft.Network/virtualNetworks/subnets/join/action"
-         # Azure PostgreSQL service ko is subnet ka use karne ki permission milti hai.
+        # Azure PostgreSQL service ko is subnet ka use karne ki permission milti hai.
       ]
     }
   }

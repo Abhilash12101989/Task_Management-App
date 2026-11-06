@@ -27,3 +27,13 @@ output "db_subnet_ids" {
   description = "PostgreSQL Delegated Subnet IDs"
   value       = module.networking.db_subnet_id
 }
+
+output "nsg_names" {
+  description = "Network Security Group names"
+  value       = module.nsg.nsg_name
+}
+
+output "nsg_ids" {
+  description = "Network Security Group IDs"
+  value       = module.nsg.nsg_id
+}
