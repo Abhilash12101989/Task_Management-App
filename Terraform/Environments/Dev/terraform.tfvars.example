@@ -1,0 +1,35 @@
+# Example variables for Dev environment
+rg = {
+  dev_rg = {
+    name     = "rg-taskmanagement-dev"
+    location = "eastus"
+  }
+}
+
+vnet = {
+  dev_vnet = {
+    vnet_name          = "vnet-taskmanagement-dev"
+    vnet_location      = "eastus"
+    rg_key             = "dev_rg"
+    vnet_address_space = ["10.0.0.0/16"]
+  }
+}
+
+app_subnet = {
+  app = {
+    app_subnet_name             = "snet-app"
+    rg_key                      = "dev_rg"
+    vnet_key                    = "dev_vnet"
+    app_subnet_address_prefixes = ["10.0.1.0/24"]
+  }
+}
+
+db_subnet = {
+  db = {
+    db_subnet_name             = "snet-db"
+    rg_key                     = "dev_rg"
+    vnet_key                   = "dev_vnet"
+    db_subnet_address_prefixes = ["10.0.2.0/24"]
+  }
+}
+
