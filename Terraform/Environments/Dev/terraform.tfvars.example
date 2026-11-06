@@ -141,3 +141,20 @@ vm = {
     os_disk_type   = "Standard_LRS"
   }
 }
+
+postgresql = {
+  db_server = {
+    server_name           = "psql-taskmanagement-dev-01" # Must be globally unique in Azure
+    rg_key                = "dev_rg"
+    vnet_key              = "dev_vnet"
+    subnet_key            = "db"
+    private_dns_zone_name = "taskmanagement.postgres.database.azure.com"
+    admin_username        = "psqladmin"
+    admin_password        = "ComplexPassword2026!" # Must meet Azure password requirements
+    database_name         = "taskdb"
+    sku_name              = "B_Standard_B1ms"
+    version               = "16"
+    storage_mb            = 32768
+  }
+}
+

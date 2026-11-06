@@ -192,12 +192,12 @@ When you build your own **Terraform IaC** and **CI/CD Pipelines**, you can use t
 3. **Application VM (Private Compute):**
    - OS: Ubuntu 22.04 LTS (`Standard_B2s`)
    - Networking: **Private IP only** (No Public IP).
-   - Authentication: SSH Public Key authentication only (`disable_password_authentication = true`).
+   - Authentication: Username and password authentication (`azureuser`).
    - Administration: Accessible securely via **Azure Bastion** (`bas-taskmanagement-dev`).
    - Workload: Runs Docker containers (Nginx reverse proxy, React SPA, and FastAPI REST API).
 4. **Database Tier (PaaS):**
    - Service: Azure Database for PostgreSQL Flexible Server with private VNet integration.
-   - Networking: Private DNS Zone (`privatelink.postgres.database.azure.com`) linked to VNet; public network access disabled.
+   - Networking: Private DNS Zone (`taskmanagement.postgres.database.azure.com`) linked to VNet; public network access disabled.
 5. **Outbound Connectivity:**
    - Azure NAT Gateway attached to `snet-app` for secure outbound internet access (package installs, container image pulls).
 
