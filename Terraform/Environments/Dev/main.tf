@@ -84,15 +84,5 @@ module "virtual_machine" {
   depends_on = [module.nic]
 }
 
-module "postgresql" {
-  source      = "../../Modules/postgresql"
-  rg_name     = module.resource_group.rg_name
-  rg_location = module.resource_group.rg_location
-  vnet_id     = module.networking.vnet_id
-  subnet_id   = module.networking.db_subnet_id
-  postgresql  = var.postgresql
-  tags        = local.common_tags
 
-  depends_on = [module.resource_group, module.networking]
-}
 

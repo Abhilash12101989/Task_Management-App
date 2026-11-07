@@ -72,24 +72,3 @@ output "vm_ids" {
   description = "Linux Virtual Machine IDs"
   value       = module.virtual_machine.vm_id
 }
-
-output "postgresql_server_ids" {
-  description = "PostgreSQL Flexible Server IDs"
-  value       = module.postgresql.server_id
-}
-
-output "postgresql_server_fqdns" {
-  description = "PostgreSQL Flexible Server FQDNs"
-  value       = module.postgresql.server_fqdn
-}
-
-output "postgresql_database_names" {
-  description = "PostgreSQL Database names"
-  value       = module.postgresql.database_name
-}
-
-output "postgresql_private_dns_zone_ids" {
-  description = "PostgreSQL Private DNS Zone IDs"
-  value       = module.postgresql.private_dns_zone_id
-}
-
